@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { ref, reactive, onMounted, nextTick } from 'vue'
   import { useCounterStore } from '@/stores/counter'
-  import { ElLoading } from 'element-plus'
+  import { ElLoading, ElMessage } from 'element-plus'
   
   const counter = useCounterStore()
   const serverAddress = 'ws://localhost:8080'
@@ -11,36 +11,14 @@
   let connectLoading: any
   const settingShow = ref(false)
   const storeShow = ref(false)
-  const keyboardCommands = [
-    {
-      behavior: 'forward',
-      optionOne: 'w',
-      optionTwo: 'arrowup'
-    },
-    {
-      behavior: 'backward',
-      optionOne: 's',
-      optionTwo: 'arrowdown'
-    },
-    {
-      behavior: 'turnLeft',
-      optionOne: 'a',
-      optionTwo: 'arrowleft'
-    },
-    {
-      behavior: 'turnRight',
-      optionOne: 'd',
-      optionTwo: 'arrowright'
-    }
-  ]
   let characterElement: HTMLDivElement
   const characterElementList: Array<{
     uuid: string,
     element: HTMLDivElement
   }> = []
-  const behaviorArray = keyboardCommands.map(({ behavior }) => behavior);
-  const optionOneArray = keyboardCommands.map(({ optionOne }) => optionOne);
-  const optionTwoArray = keyboardCommands.map(({ optionTwo }) => optionTwo);
+  let behaviorArray = ref<Array<string>>([])
+  let optionOneArray = ref<Array<string>>([])
+  let optionTwoArray = ref<Array<string>>([])
   const chatMessage = ref('')
   // 这里如果给historyContentList.push(1)也不会出现报错，也许还需要什么其他操作？
   const historyContentList = reactive<string []>([])
@@ -77,9 +55,9 @@
         const sceneElement = document.querySelector('.scene')
         characterElement = document.createElement('div')
         characterElement.setAttribute('id', uuid)
-        characterElement.style.width = '5vw'
-        characterElement.style.height = '5vh'
-        characterElement.style.backgroundColor = 'antiquewhite'
+        characterElement.style.width = '10vw'
+        characterElement.style.height = '10vh'
+        characterElement.style.backgroundColor = 'rgb(173, 216, 156)'
         characterElement.style.position = 'fixed'
         characterElement.innerText = uuid
         sceneElement!.appendChild(characterElement)
@@ -95,10 +73,10 @@
     })
   }
   const reqKeyboardCommands = () => {
-    fetch('http://localhost:9123/test', {
+    fetch('http://localhost:9123/reqKeyboardCommands', {
       method: 'post',
       body: JSON.stringify({
-        name: 'zzh'
+        name: counter.uuid
       }),
       headers: {
         'Content-Type': 'application/json',
@@ -106,10 +84,13 @@
     })
     .then(response => response.text())
     .then(data => {
-      console.log(`response:${JSON.stringify(data)}`)
+      const res = JSON.parse(data)
+      behaviorArray = res.data.map(({ behavior }) => behavior)
+      optionOneArray = res.data.map(({ optionOne }) => optionOne)
+      optionTwoArray = res.data.map(({ optionTwo }) => optionTwo)
     })
     .catch(err => {
-      console.log(`err:${JSON.stringify(err)}`)
+      console.error('api错误', err)
     })
   }
   const setControl = () => {
@@ -128,7 +109,8 @@
         }
         ws.send(JSON.stringify(obj))
       })
-    } else {
+    }
+    if (counter.deviceType === 'Mobile') {
       
     }
   }
@@ -142,14 +124,14 @@
       moreBoxElement!.addEventListener('mouseleave', e => {
         moreBoxElement.style.height = '3vw'
       })
-    } else {
+    }
+    if (counter.deviceType === 'Mobile') {
       
     }
   }
   const handleMessage = () => {
     ws.addEventListener('message', (e) => {
       const res = JSON.parse(e.data)
-      // console.log('---------------->message', res)
       if (res.type === 'behavior') {
         if (res.status) {
           const optionOneIndex = optionOneArray.indexOf(res.data)
@@ -192,8 +174,12 @@
       }
       if (res.type === 'loadCharacter') {
         if (res.status) {
-          console.log(res.uuid)
-          loadCharacter(res.uuid)
+          res.uuidList.forEach((item: string) => {
+            const el = document.getElementById(item)
+            if (!el) {
+              loadCharacter(item)
+            }
+          })
         }
       }
     })
@@ -205,6 +191,7 @@
       uuid: counter.uuid
     }
     ws.send(JSON.stringify(obj))
+    chatMessage.value = ''
   }
   const handleClickSetting = () => {
     settingShow.value = true
@@ -222,11 +209,8 @@
   const establishConnection = () => {
     ws = new WebSocket(serverAddress)
     ws.addEventListener('open', async (event) => {
-      console.log('连接成功', event)
-      console.log(ws.readyState, ws.readyState === 1)
       connectLoading.close()
       await loadScene()
-      // await loadCharacter()
       setControl()
       handleMessage()
     })
@@ -237,7 +221,7 @@
       if (currentTime.getTime() - firstEnterTime.getTime() < 60000) {
         establishConnection()
         reconnectCount++
-        console.log(reconnectCount, currentTime.getTime() - firstEnterTime.getTime())
+        console.log('尝试连接时间：', reconnectCount, currentTime.getTime() - firstEnterTime.getTime())
       } else {
         console.log('connection timed out', event)
       }

@@ -1,28 +1,23 @@
 // import { WebSocket } from 'ws'
 // import DFAUtil from './dfa.js'
 const DFAUtil = require('./dfa');
+const express = require('express');
+const cors = require('cors');
+const WebSocket = require('ws');
+
+const uuidList = []
+
 const loadCharacter = () => {
   const allClients = Array.from(ws.clients)
   allClients.forEach((item, index) => {
     const obj = {
       status: true,
       type: "loadCharacter",
-      uuid: uuidList[index]
+      uuidList: uuidList
     }
-    console.log('-------------->index', index)
     item.send(JSON.stringify(obj))
   })
-  // ws.clients.forEach((item, index) => {
-  //   const obj = {
-  //     status: true,
-  //     type: "loadCharacter",
-  //     uuid: uuidList[index]
-  //   }
-  //   console.log('-------------->index', index)
-  //   item.send(JSON.stringify(obj))
-  // })
 }
-const WebSocket = require('ws');
 const ws = new WebSocket.Server({port: 8080}, () => {
   console.log('启动成功')
 })
@@ -81,10 +76,6 @@ ws.on('connection', (socket) => {
   }, 5000)
 })
 // http
-const express = require('express');
-const cors = require('cors');
-
-const uuidList = []
 const app = express();
 app.use(cors());
 app.use(express.urlencoded({extended:false}));
@@ -109,24 +100,70 @@ app.post('/tracker', (req, res) => {
 //     res.setHeader('Expires', expirationDate.toUTCString());
 //     res.send('here is test')
 // });
-app.get('/test', (req, res) => {
-    console.log(req.body)
+app.post('/reqKeyboardCommands', (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=3600'); // 缓存1小时
     const now = new Date();
     const expirationDate = new Date(now.getTime() + 3600000); // 过期时间为当前时间加1小时
     res.setHeader('Expires', expirationDate.toUTCString());
-    res.send('here is test')
+    let obj = {
+      state: true,
+      data: [
+        {
+          behavior: 'forward',
+          optionOne: 'w',
+          optionTwo: 'arrowup'
+        },
+        {
+          behavior: 'backward',
+          optionOne: 's',
+          optionTwo: 'arrowdown'
+        },
+        {
+          behavior: 'turnLeft',
+          optionOne: 'a',
+          optionTwo: 'arrowleft'
+        },
+        {
+          behavior: 'turnRight',
+          optionOne: 'd',
+          optionTwo: 'arrowright'
+        }
+      ]
+    }
+    res.send(obj)
 });
+// data中有name、password目前认为name是uuid
 app.post('/login', (req, res) => {
     const data = JSON.parse(JSON.stringify(req.body))
     res.setHeader('Cache-Control', 'public, max-age=3600'); // 缓存1小时
     const now = new Date();
     const expirationDate = new Date(now.getTime() + 3600000); // 过期时间为当前时间加1小时
     res.setHeader('Expires', expirationDate.toUTCString());
-    const obj = {
-      status: true,
-      uuid: data.name,
-      temp: 'zzh'
+    let obj
+    let flag = true
+    if (data.name === '') {
+      flag = false
+      obj = {
+        status: false,
+        uuid: data.name,
+        message: '未输入用户名'
+      }
+    }
+    if (uuidList.includes(data.name)) {
+      flag = false
+      obj = {
+        status: false,
+        uuid: data.name,
+        message: '重复登录'
+      }
+    }
+    if (flag) {
+      uuidList.push(data.name)
+      obj = {
+        status: true,
+        uuid: data.name,
+        message: ''
+      }
     }
     res.send(obj)
 });
