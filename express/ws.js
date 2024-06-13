@@ -1,0 +1,135 @@
+// import { WebSocket } from 'ws'
+// import DFAUtil from './dfa.js'
+const DFAUtil = require('./dfa');
+const loadCharacter = () => {
+  const allClients = Array.from(ws.clients)
+  allClients.forEach((item, index) => {
+    const obj = {
+      status: true,
+      type: "loadCharacter",
+      uuid: uuidList[index]
+    }
+    console.log('-------------->index', index)
+    item.send(JSON.stringify(obj))
+  })
+  // ws.clients.forEach((item, index) => {
+  //   const obj = {
+  //     status: true,
+  //     type: "loadCharacter",
+  //     uuid: uuidList[index]
+  //   }
+  //   console.log('-------------->index', index)
+  //   item.send(JSON.stringify(obj))
+  // })
+}
+const WebSocket = require('ws');
+const ws = new WebSocket.Server({port: 8080}, () => {
+  console.log('启动成功')
+})
+ws.on('connection', (socket) => {
+  console.log('连接成功')
+  loadCharacter()
+  socket.on('message', (e) => {
+    console.log(JSON.parse(e))
+    const req = JSON.parse(e)
+    let violatingWords
+    if (req.type === 'chat') {
+      const dfaUtil = new DFAUtil();
+      const set = new Set();
+      set.add("我操");
+      set.add("我草");
+      set.add("fuck");
+      dfaUtil.createDFAHashMap(set);
+      const violationSet = dfaUtil.getSensitiveWordByDFAMap(req.data, 2)
+      console.log('--------------', violationSet)
+      if (violationSet.size !== 0) {
+        violatingWords = Array.from(violationSet)[0]
+        const regex = new RegExp(violatingWords, 'g')
+        req.data = req.data.replace(regex, '*'.repeat(violatingWords.length))
+      }
+    }
+    const obj = {
+      status: true,
+      type: req.type,
+      data: req.data,
+      uuid: req.uuid
+    }
+    // 广播,向所有连接的人发送
+    ws.clients.forEach(item => {
+      item.send(JSON.stringify(obj))
+    })
+    // if (req.type === 'chat') {
+    //   ws.clients.forEach(item => {
+    //     item.send(JSON.stringify(obj))
+    //   })
+    // } else {
+    //   socket.send(JSON.stringify(obj))
+    // }
+  })
+  // 心跳检测
+  let heartInreaval = setInterval(() => {
+    if (socket.readyState === WebSocket.OPEN) {
+      const obj = {
+        status: true,
+        type: 'ping',
+        data: 'ping'
+      }
+      socket.send(JSON.stringify(obj))
+    } else {
+      clearInterval(heartInreaval)
+    }
+  }, 5000)
+})
+// http
+const express = require('express');
+const cors = require('cors');
+
+const uuidList = []
+const app = express();
+app.use(cors());
+app.use(express.urlencoded({extended:false}));
+app.use(express.json())
+app.post('/tracker', (req, res) => {
+  const list = Object.keys(req.body)
+  list.forEach(item => {
+    console.log('-----------------------------')
+    const obj = JSON.parse(item)
+    for (let key in obj) {
+      console.log(key + ': ' + obj[key] + '\r\n');
+    }
+    console.log('-----------------------------')
+  })
+  res.send('good')
+});
+// app.post('/test', (req, res) => {
+//     console.log(req.body)
+//     res.setHeader('Cache-Control', 'public, max-age=3600'); // 缓存1小时
+//     const now = new Date();
+//     const expirationDate = new Date(now.getTime() + 3600000); // 过期时间为当前时间加1小时
+//     res.setHeader('Expires', expirationDate.toUTCString());
+//     res.send('here is test')
+// });
+app.get('/test', (req, res) => {
+    console.log(req.body)
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // 缓存1小时
+    const now = new Date();
+    const expirationDate = new Date(now.getTime() + 3600000); // 过期时间为当前时间加1小时
+    res.setHeader('Expires', expirationDate.toUTCString());
+    res.send('here is test')
+});
+app.post('/login', (req, res) => {
+    const data = JSON.parse(JSON.stringify(req.body))
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // 缓存1小时
+    const now = new Date();
+    const expirationDate = new Date(now.getTime() + 3600000); // 过期时间为当前时间加1小时
+    res.setHeader('Expires', expirationDate.toUTCString());
+    const obj = {
+      status: true,
+      uuid: data.name,
+      temp: 'zzh'
+    }
+    res.send(obj)
+});
+app.listen(9123,() => {
+    console.log('success 9123')
+});

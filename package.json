@@ -1,0 +1,32 @@
+{
+  "name": "onlinegamedemo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build && (IF NOT EXIST sourcemaps (mkdir sourcemaps) ELSE (rmdir /s /q sourcemaps && mkdir sourcemaps)) && move /Y dist\\assets\\*.map sourcemaps/",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@lottiefiles/dotlottie-vue": "^0.3.2",
+    "@types/three": "^0.163.0",
+    "@types/ws": "^8.5.10",
+    "cors": "^2.8.5",
+    "cros": "^1.0.1",
+    "element-plus": "^2.6.3",
+    "express": "^4.19.2",
+    "pinia": "^2.1.7",
+    "sass": "^1.74.1",
+    "three": "^0.163.0",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.2",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0",
+    "vue-tsc": "^2.0.6"
+  }
+}

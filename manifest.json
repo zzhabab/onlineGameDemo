@@ -1,0 +1,16 @@
+{
+  "name": "pwa",
+  "short_name": "pwa",
+  "descriptions": "一个pwa",
+  "start_url": "/",
+  "scope": "/",
+  "background_color": "gray",
+  "display": "fullscreen",
+  "icons": [
+    {
+      "src": "/zzh.png",
+      "sizes": "640x640",
+      "type": "image/png"
+    }
+  ]
+}
