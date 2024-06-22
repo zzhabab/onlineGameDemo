@@ -6,7 +6,7 @@
   --themeColor: #fff;
 }
 body, html, #app {
-  overflow: hidden;
+  /* overflow: hidden; */
   height: 100vh;
   width: 100vw;
   margin: 0;
