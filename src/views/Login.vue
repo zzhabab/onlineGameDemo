@@ -10,8 +10,8 @@
   <!-- <DotLottieVue style="height: 500px; width: 500px" autoplay loop :src="globalLoading" />
   <DotLottieVue style="height: 500px; width: 500px" autoplay loop :src="partLoading" /> -->
   <div class="scrollContainer" style="border: 1px solid black; overflow: auto; width: 500px; height: 300px; display: flex; flex-wrap: wrap;">
-    <template v-for="(item, index) in resultList">
-      <div v-if="item.show" class="countBox" style="width: 50px; height: 50px; margin-right: 10px; margin-top: 10px; background-color: antiquewhite;">
+    <template v-for="(item, index) in myList.slice(startIndex, endIndex)" :key="index">
+      <div class="countBox" style="width: 50px; height: 50px; margin-right: 10px; margin-top: 10px; background-color: antiquewhite;">
         {{ item.count }}
       </div>
     </template>
@@ -87,23 +87,13 @@
   
   const myList = ref(Array.from({length: 100}, (_, index) => {
     return {
-      count: index + 1,
-      show: false
+      count: index + 1
     }
   }))
   let startIndex = ref(0)
   let endIndex = ref(50)
-  let resultList = computed({
-    get() {
-      return myList.value.slice(startIndex.value, endIndex.value)
-    },
-    set() {
-      
-    }
-  })
   
   onMounted(() => {
-    
     myList.value.forEach((item, index) => {
       if (index < endIndex.value) {
         item.show = true
@@ -112,17 +102,30 @@
     const myObserver = new IntersectionObserver((entries) => {
       const entry = entries[0]
       if (entry.isIntersecting) {
-        endIndex.value = Math.min(100, endIndex.value + 1)
-        const elList = document.querySelectorAll('.countBox')
-        const lastEl = elList[elList.length - 1]
-        myObserver.observe(lastEl)
-        console.log('ifffffffffffffff', startIndex.value, endIndex.value)
+        // if (entry.intersectionRatio === 0) {
+        //   console.log('----------->entry.intersectionRatio===0', entry.intersectionRatio, entry.target)
+        // } else if (entry.intersectionRatio === 1) {
+        //   console.log('----------->entry.intersectionRatio===1', entry.intersectionRatio, entry.target)
+        // }
+        // endIndex.value = Math.min(100, endIndex.value + 1)
+        // const elList = document.querySelectorAll('.countBox')
+        // const lastEl = elList[elList.length - 1]
+        // myObserver.observe(lastEl)
+        
+        // endIndex.value = Math.min(100, endIndex.value + 1)
+        // startIndex.value = Math.min(100, startIndex.value + 1)
+        // myObserver.unobserve(entry.target)
+        // const elList = document.querySelectorAll('.countBox')
+        // const lastEl = elList[elList.length - 1]
+        // myObserver.observe(lastEl)
+        // console.log('ifffffffffffffff', startIndex.value, endIndex.value, entry.target)
+        
       } else {
-        const elList = document.querySelectorAll('.countBox')
-        const firstEl = elList[0]
-        myObserver.unobserve(firstEl)
-        startIndex.value = Math.min(100, startIndex.value + 1)
-        console.log('elseeeeeeeeeeeeeee', startIndex.value, endIndex.value)
+        // const elList = document.querySelectorAll('.countBox')
+        // const firstEl = elList[0]
+        // myObserver.unobserve(firstEl)
+        // startIndex.value = Math.min(100, startIndex.value + 1)
+        // console.log('elseeeeeeeeeeeeeee', startIndex.value, endIndex.value, entry.target)
       }
     }, {root: document.querySelector('.scrollContainer'), threshold: [0, 0.5, 1]})
     nextTick(() => {
