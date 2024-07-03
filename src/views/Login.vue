@@ -1,8 +1,10 @@
 <template>
+  <!-- 设定视口高度 -->
   <div class="box" style="max-height: 500px; overflow: auto;">
-    <div class="container" :style="`height: ${myList.length * 100}px;`">
-      <div class="transitionBox" style="width: 700px;">
-        <div class="boxItem" style="width: 100%; height: 100px; text-align: center;" :style="index % 2 === 0 ? 'background-color: lightgray;' : ''" v-for="(item, index) in myList.slice(startIndex, endIndex)">
+    <!-- 设定myList全展示时的height来获得一个真实的scrollBar -->
+    <div class="container" style="position: relative;" :style="`height: ${myList.length * itemHeight}px;`">
+      <div class="transitionBox" style="width: 100%; position: absolute;">
+        <div class="boxItem" style="width: 100%; height: 100px; text-align: center;" :style="parseInt(item) % 2 === 0 ? 'background-color: lightgray;' : ''" v-for="(item, index) in myList.slice(startIndex, startIndex + count)">
           {{ item }}
         </div>
       </div>
@@ -11,62 +13,39 @@
 </template>
 
 <script setup lang="ts">
-  import {
+import {
     ref,
     reactive,
     onMounted,
-    nextTick,
-    defineAsyncComponent,
-    toRaw,
-    computed
   } from 'vue'
   
-  const myList = Array.from({length: 100}, (_, index) => index)
+  const myList = Array.from({length: 1000}, (_, index) => index)
   let startIndex = ref(0)
-  let endIndex = ref(7)
-  let initFlag = true
-  let lastScrollTop = 0
+  const count = 7
+  let lastModuloResult = 0
+  const itemHeight = 100
   
   onMounted(() => {
     const boxElement = document.querySelector('.box')
+    const transitionBoxElement = document.querySelector('.transitionBox')
     boxElement?.addEventListener('scroll', (event) => {
-      // 往下滚
       const currentScrollTop = event.target.scrollTop
-      if (currentScrollTop - lastScrollTop >= 60) {
-        
-        lastScrollTop = currentScrollTop
+      const moduloResult = Math.min(parseInt(currentScrollTop / itemHeight), myList.length - count)
+      // 往下滚
+      if (moduloResult > lastModuloResult) {
+        startIndex.value = Math.min(startIndex.value + (moduloResult - lastModuloResult), myList.length)
+        transitionBoxElement.style.top = currentScrollTop + 'px'
+        lastModuloResult = moduloResult
       }
-      if (currentScrollTop - lastScrollTop <= -60) {
-        lastScrollTop = currentScrollTop
+      // 往上滚
+      if (moduloResult < lastModuloResult) {
+        startIndex.value = Math.max(startIndex.value - (lastModuloResult - moduloResult), 0)
+        // 三元表达式的赋值为0px很有必要，可以调节top值的误差
+        transitionBoxElement.style.top = moduloResult === 0 ? '0px' : currentScrollTop - itemHeight + 'px'
+        lastModuloResult = moduloResult
       }
     })
   })
-  
-  // onMounted(() => {
-  //   const boxElement = document.querySelector('.box')
-  //   const myObserver = new IntersectionObserver((entries) => {
-  //     if (initFlag) {
-  //       initFlag = !initFlag
-  //     } else {
-  //       entries.forEach(entry => {
-  //         if (entry.intersectionRatio === 1) {
-  //           console.log('------------>entry', entry.target)
-  //           startIndex.value = startIndex.value + 1
-  //           endIndex.value = endIndex.value + 1
-  //           const boxItemElList = document.querySelectorAll('.boxItem')
-  //           myObserver.observe(boxItemElList[boxItemElList.length - 1])
-  //         }
-  //       })
-  //     }
-  //   }, {root: boxElement, threshold: [0, 1]})
-  //   nextTick(() => {
-  //     const boxItemElList = document.querySelectorAll('.boxItem')
-  //     boxItemElList.forEach(item => {
-  //       myObserver.observe(item)
-  //     })
-  //   })
-  // })
-  
 </script>
 
 <style>
