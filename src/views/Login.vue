@@ -32,27 +32,27 @@ import {
   let lastModuloResult = 0
   const itemHeight = 100
   
-  // onMounted(() => {
-  //   const boxElement = document.querySelector('.box')
-  //   const transitionBoxElement = document.querySelector('.transitionBox')
-  //   boxElement?.addEventListener('scroll', (event) => {
-  //     const currentScrollTop = event.target.scrollTop
-  //     const moduloResult = Math.min(parseInt(currentScrollTop / itemHeight), myList.length - count)
-  //     // 往下滚
-  //     if (moduloResult > lastModuloResult) {
-  //       startIndex.value = Math.min(startIndex.value + (moduloResult - lastModuloResult), myList.length)
-  //       transitionBoxElement.style.top = currentScrollTop + 'px'
-  //       lastModuloResult = moduloResult
-  //     }
-  //     // 往上滚
-  //     if (moduloResult < lastModuloResult) {
-  //       startIndex.value = Math.max(startIndex.value - (lastModuloResult - moduloResult), 0)
-  //       // 三元表达式的赋值为0px很有必要，可以调节top值的误差
-  //       transitionBoxElement.style.top = moduloResult === 0 ? '0px' : currentScrollTop - itemHeight + 'px'
-  //       lastModuloResult = moduloResult
-  //     }
-  //   })
-  // })
+  onMounted(() => {
+    const boxElement = document.querySelector('.box')
+    const transitionBoxElement = document.querySelector('.transitionBox')
+    boxElement?.addEventListener('scroll', (event) => {
+      const currentScrollTop = event.target.scrollTop
+      const moduloResult = Math.min(parseInt(currentScrollTop / itemHeight), myList.length - count)
+      // 往下滚
+      if (moduloResult > lastModuloResult) {
+        startIndex.value = Math.min(startIndex.value + (moduloResult - lastModuloResult), myList.length)
+        transitionBoxElement.style.top = currentScrollTop + 'px'
+        lastModuloResult = moduloResult
+      }
+      // 往上滚
+      if (moduloResult < lastModuloResult) {
+        startIndex.value = Math.max(startIndex.value - (lastModuloResult - moduloResult), 0)
+        // 三元表达式的赋值为0px很有必要，可以调节top值的误差
+        transitionBoxElement.style.top = moduloResult === 0 ? '0px' : currentScrollTop - itemHeight + 'px'
+        lastModuloResult = moduloResult
+      }
+    })
+  })
 </script>
 
 <style>

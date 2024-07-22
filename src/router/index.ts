@@ -12,6 +12,7 @@ export const constantRoutes = [
   },
   {
     path: '/hello',
+    name: 'hello',
     component: () => import('@/components/HelloWorld.vue')
   }
 ]
