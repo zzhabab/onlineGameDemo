@@ -43,43 +43,29 @@
       view: new View({
         center: [104.065742,30.657441],
         zoom: 6,
-        projection: 'EPSG:4326'
+        projection: 'EPSG:4326',
       })
     });
-    const count = 200;
-    const features = new Array(count);
-    for (let i = 0; i < count; i++) {
-      let tempFeature = new Feature({
-        geometry: new Point([109.065742 + Math.random() * 10,33.657441 + Math.random() * 10])
-      })
-      features[i] = tempFeature
-    }
-    source = new VectorSource({
-      features: features,
-    });
-    const clusterSource = new Cluster({
-      source: source,
-    });
-    firstLayer = new VectorLayer({
-      source: clusterSource,
-      style: function(feature) {
-        let style = new Style({
+    
+    function addRandomFeature() {
+      const x = 104.065742 + parseInt(Math.random() * 10);
+      const y = 30.657441 + parseInt(Math.random() * 10);
+      const feature = new Feature({
+        geometry: new Point([x, y]),
+        style: new Style({
           image: new Circle({
             fill: new Fill({
               color: '#3399CC'
             }),
             radius: 15,
           }),
-          text: new Text({
-            text: feature.get('features').length.toString(),
-            font: '12px',
-            fill: new Fill({color: 'white'})
-          })
         })
-        return style
-      }
-    })
-    map.addLayer(firstLayer)
+      })
+      source.addFeature(feature);
+      firstLayer.setSource(source)
+      map.addLayer(firstLayer)
+    }
+    addRandomFeature()
   })
 </script>
 
