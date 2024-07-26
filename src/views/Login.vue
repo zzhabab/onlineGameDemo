@@ -1,60 +1,91 @@
 <template>
-  <!-- <div class="box" style="max-height: 500px; overflow: auto;">
-    <div class="container" style="position: relative;" :style="`height: ${myList.length * itemHeight}px;`">
-      <div class="transitionBox" style="width: 100%; position: absolute;">
-        <div class="boxItem" style="width: 100%; height: 100px; text-align: center;" :style="parseInt(item) % 2 === 0 ? 'background-color: lightgray;' : ''" v-for="(item, index) in myList.slice(startIndex, startIndex + count)">
-          {{ item }}
-        </div>
-      </div>
-    </div>
-  </div> -->
-  <div class="box" style="max-height: 500px; overflow: auto;">
-    <div class="container" style="position: relative;" :style="`height: ${myList.length * itemHeight}px;`">
-      <div class="transitionBox" style="width: 100%; position: absolute;">
-        <div class="boxItem" style="width: 100%; height: 100px; text-align: center;" :style="parseInt(item) % 2 === 0 ? 'background-color: lightgray;' : ''" v-for="(item, index) in myList.slice(startIndex, startIndex + count)">
-          {{ item }}
-        </div>
-      </div>
-    </div>
+  <div id="map">
+    <input id="speed" type="range" min="1" max="100" step="1" value="60">
+    <button id='controllerButton'>start</button>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-    ref,
-    reactive,
-    onMounted,
-  } from 'vue'
+  import Map from 'ol/Map';
+  import View from 'ol/View';
+  import TileLayer from 'ol/layer/Tile';
+  import XYZ from 'ol/source/XYZ';
+  import Feature from 'ol/Feature';
+  import { Style, Circle, Fill, Text } from 'ol/style'
+  import VectorSource from 'ol/source/Vector'
+  import VectorLayer from 'ol/layer/Vector'
+  import Point from 'ol/geom/Point'
+  import LineString from 'ol/geom/LineString'
+  import geometry from 'ol/geom/Geometry'
   
-  const myList = Array.from({length: 1000}, (_, index) => index)
-  let startIndex = ref(0)
-  const count = 7
-  let lastModuloResult = 0
-  const itemHeight = 100
+  import Polyline from 'ol/format/Polyline.js';
+  import {getVectorContext} from 'ol/render.js';
+  import {Cluster} from 'ol/source.js';
+  
+  import { ref, reactive, onMounted, nextTick, defineAsyncComponent, toRaw } from 'vue'
+  
+  let map: any = null
+  let source: any = null
+  let firstLayer: any = null
   
   onMounted(() => {
-    const boxElement = document.querySelector('.box')
-    const transitionBoxElement = document.querySelector('.transitionBox')
-    boxElement?.addEventListener('scroll', (event) => {
-      const currentScrollTop = event.target.scrollTop
-      const moduloResult = Math.min(parseInt(currentScrollTop / itemHeight), myList.length - count)
-      // 往下滚
-      if (moduloResult > lastModuloResult) {
-        startIndex.value = Math.min(startIndex.value + (moduloResult - lastModuloResult), myList.length)
-        transitionBoxElement.style.top = currentScrollTop + 'px'
-        lastModuloResult = moduloResult
-      }
-      // 往上滚
-      if (moduloResult < lastModuloResult) {
-        startIndex.value = Math.max(startIndex.value - (lastModuloResult - moduloResult), 0)
-        // 三元表达式的赋值为0px很有必要，可以调节top值的误差
-        transitionBoxElement.style.top = moduloResult === 0 ? '0px' : currentScrollTop - itemHeight + 'px'
-        lastModuloResult = moduloResult
+    source = new VectorSource()
+    firstLayer = new VectorLayer()
+    map = new Map({
+      target: 'map',
+      layers: [
+        new TileLayer({
+          source: new XYZ({
+            url: 'http://webst0{1-4}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}'
+          })
+        })
+      ],
+      view: new View({
+        center: [104.065742,30.657441],
+        zoom: 6,
+        projection: 'EPSG:4326'
+      })
+    });
+    const count = 200;
+    const features = new Array(count);
+    for (let i = 0; i < count; i++) {
+      let tempFeature = new Feature({
+        geometry: new Point([109.065742 + Math.random() * 10,33.657441 + Math.random() * 10])
+      })
+      features[i] = tempFeature
+    }
+    source = new VectorSource({
+      features: features,
+    });
+    const clusterSource = new Cluster({
+      source: source,
+    });
+    firstLayer = new VectorLayer({
+      source: clusterSource,
+      style: function(feature) {
+        let style = new Style({
+          image: new Circle({
+            fill: new Fill({
+              color: '#3399CC'
+            }),
+            radius: 15,
+          }),
+          text: new Text({
+            text: feature.get('features').length.toString(),
+            font: '12px',
+            fill: new Fill({color: 'white'})
+          })
+        })
+        return style
       }
     })
+    map.addLayer(firstLayer)
   })
 </script>
 
 <style>
-  
+  #map{
+    width: 100%;
+    height: 100%;
+  }
 </style>
