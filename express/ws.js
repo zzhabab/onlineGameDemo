@@ -92,13 +92,13 @@ app.post('/tracker', (req, res) => {
   })
   res.send('good')
 });
-app.get('/test', (req, res) => {
-    console.log(req.body)
-    res.setHeader('Cache-Control', 'public, max-age=3600'); // 缓存1小时
-    const now = new Date();
-    const expirationDate = new Date(now.getTime() + 3600000); // 过期时间为当前时间加1小时
-    res.setHeader('Expires', expirationDate.toUTCString());
-    res.send('here is test')
+app.post('/test', (req, res) => {
+  console.log(req.body)
+  res.setHeader('Cache-Control', 'public, max-age=3600'); // 缓存1小时
+  const now = new Date();
+  const expirationDate = new Date(now.getTime() + 3600000); // 过期时间为当前时间加1小时
+  res.setHeader('Expires', expirationDate.toUTCString());
+  res.send(JSON.stringify({value: 'here is test'}))
 });
 app.post('/reqKeyboardCommands', (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=3600'); // 缓存1小时

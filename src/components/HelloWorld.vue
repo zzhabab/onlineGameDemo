@@ -2,7 +2,7 @@
   import { ref, reactive, onMounted, nextTick } from 'vue'
   import { useCounterStore } from '@/stores/counter'
   import { ElLoading, ElMessage } from 'element-plus'
-  
+
   const counter = useCounterStore()
   const serverAddress = 'ws://localhost:8080'
   let ws: WebSocket
@@ -20,18 +20,48 @@
   let optionOneArray = ref<Array<string>>([])
   let optionTwoArray = ref<Array<string>>([])
   const chatMessage = ref('')
-  // ÕâÀïÈç¹û¸øhistoryContentList.push(1)Ò²²»»á³öÏÖ±¨´í£¬Ò²Ğí»¹ĞèÒªÊ²Ã´ÆäËû²Ù×÷£¿
+  // è¿™é‡Œå¦‚æœç»™historyContentList.push(1)ä¹Ÿä¸ä¼šå‡ºç°æŠ¥é”™ï¼Œä¹Ÿè®¸è¿˜éœ€è¦ä»€ä¹ˆå…¶ä»–æ“ä½œï¼Ÿ
   const historyContentList = reactive<string []>([])
   
-  onMounted(() => {
+  onMounted(async () => {
     connectLoading = ElLoading.service({
       lock: true,
       text: 'Loading',
       background: 'rgba(0, 0, 0, 0.7)',
     })
-    establishConnection()
-    initClassNameMoreDiv()
+    const establishConnectionPromise = await establishConnection()
+    if (establishConnectionPromise === 'open') {
+      await loadScene()
+      setControl()
+      handleMessage()
+      initClassNameMoreDiv()
+    }
+    if (establishConnectionPromise === 'error') {
+
+    }
   })
+  const establishConnection = () => {
+    return new Promise((resolve, reject) => {
+      ws = new WebSocket(serverAddress)
+      ws.addEventListener('open', async (event) => {
+        connectLoading.close()
+        resolve('open')
+      })
+      // å°è¯•è¿æ¥å¤±è´¥åä¹Ÿä¼šè§¦å‘è¿™ä¸ªlistener
+      ws.addEventListener('error', (event) => {
+        const currentTime = new Date()
+        // 60000æ¯«ç§’ä¹Ÿå°±æ˜¯ä¸€åˆ†é’Ÿçš„è¶…æ—¶
+        if (currentTime.getTime() - firstEnterTime.getTime() < 60000) {
+          establishConnection()
+          reconnectCount++
+          console.log('å°è¯•è¿æ¥æ—¶é—´ï¼š', reconnectCount, currentTime.getTime() - firstEnterTime.getTime())
+        } else {
+          console.log('connection timed out', event)
+          reject('error')
+        }
+      })
+    })
+  }
   const loadScene = () : Promise<boolean> => {
     return new Promise((resolve, reject) => {
       try {
@@ -44,7 +74,7 @@
         containerElement!.appendChild(sceneElement)
         resolve(true)
       } catch (e) {
-        console.error('³¡¾°¼ÓÔØÊ§°Ü', e)
+        console.error('åœºæ™¯åŠ è½½å¤±è´¥', e)
         reject(false)
       }
     })
@@ -67,7 +97,7 @@
         })
         resolve(true)
       } catch (e) {
-        console.error('½ÇÉ«¼ÓÔØÊ§°Ü', e)
+        console.error('è§’è‰²åŠ è½½å¤±è´¥', e)
         reject(false)
       }
     })
@@ -90,11 +120,11 @@
       optionTwoArray = res.data.map(({ optionTwo }) => optionTwo)
     })
     .catch(err => {
-      console.error('api´íÎó', err)
+      console.error('apié”™è¯¯', err)
     })
   }
   const setControl = () => {
-    // Á½ÖÖ²Ù×÷·½Ê½
+    // ä¸¤ç§æ“ä½œæ–¹å¼
     if (counter.deviceType === 'PC') {
       reqKeyboardCommands()
       window.addEventListener('keydown', (e) => {
@@ -116,7 +146,7 @@
   }
   const initClassNameMoreDiv = () => {
     const moreBoxElement: HTMLDivElement = document.querySelector('.moreBox') as HTMLDivElement
-    // ¼üÅÌÊÇhoverÕ¹¿ª£¬ÒÆ¶¯¶ËÊÇclick
+    // é”®ç›˜æ˜¯hoverå±•å¼€ï¼Œç§»åŠ¨ç«¯æ˜¯click
     if (counter.deviceType === 'PC') {
       moreBoxElement!.addEventListener('mouseenter', e => {
         moreBoxElement.style.height = 'calc(9vw + 20px)'
@@ -203,29 +233,17 @@
     settingShow.value = false
     storeShow.value = false
   }
+  const handleSettingItemClick = (type, myIndex) => {
+    // let 
+    if (type === 'optionOne') {
+      // optionOneArray
+    }
+    if (type === 'optionTwo') {
+      // optionTwoArray
+    }
+  }
   const handleLogOut = () => {
     ws.close()
-  }
-  const establishConnection = () => {
-    ws = new WebSocket(serverAddress)
-    ws.addEventListener('open', async (event) => {
-      connectLoading.close()
-      await loadScene()
-      setControl()
-      handleMessage()
-    })
-    // ³¢ÊÔÁ¬½ÓÊ§°ÜºóÒ²»á´¥·¢Õâ¸ölistener
-    ws.addEventListener('error', (event) => {
-      const currentTime = new Date()
-      // 60000ºÁÃëÒ²¾ÍÊÇÒ»·ÖÖÓµÄ³¬Ê±
-      if (currentTime.getTime() - firstEnterTime.getTime() < 60000) {
-        establishConnection()
-        reconnectCount++
-        console.log('³¢ÊÔÁ¬½ÓÊ±¼ä£º', reconnectCount, currentTime.getTime() - firstEnterTime.getTime())
-      } else {
-        console.log('connection timed out', event)
-      }
-    })
   }
 </script>
 
@@ -245,21 +263,32 @@
         <input id="userInputBox" @keydown.enter="handleClickSendMessage" v-model="chatMessage" />
       </div>
       <div class="right">
-        <button @click="handleClickSendMessage">·¢ËÍ</button>
+        <button @click="handleClickSendMessage">å‘é€</button>
       </div>
     </div>
   </div>
   <el-dialog
     v-model="settingShow"
-    title="ÉèÖÃ"
+    title="è®¾ç½®"
     width="70vw"
     :before-close="handleSettingAndStoreClose"
   >
-    <span>This is a message</span>
+    <div class="settingDialogBody">
+      <div v-for="(item, index) in behaviorArray" class="optionContainer" :style="index === behaviorArray.length - 1 ? '' : 'margin-bottom: 2vh;'">
+        <div style="width: 100px;">{{ item }}</div>
+        <div class="optionContainerItem" @click="handleSettingItemClick('optionOne', index)">{{ optionOneArray[index] }}</div>
+        <div class="optionContainerItem" @click="handleSettingItemClick('optionTwo', index)">{{ optionTwoArray[index] }}</div>
+      </div>
+      <div style="flex: 1;"></div>
+      <div style="display: flex; width: 100%;">
+        <el-button style="margin-left: auto;">ç¡®å®š</el-button>
+        <el-button>é»˜è®¤è®¾ç½®</el-button>
+      </div>
+    </div>
   </el-dialog>
   <el-dialog
     v-model="storeShow"
-    title="ÉÌ³Ç"
+    title="å•†åŸ"
     width="70vw"
     :before-close="handleSettingAndStoreClose"
   >
@@ -268,6 +297,7 @@
 </template>
 
 <style lang="scss" scoped>
+  @import "@/common/index.scss";
   $myTransitionDuration: 0.5s;
   .container {
     width: 100vw;
@@ -283,23 +313,23 @@
     transition: all $myTransitionDuration;
     overflow: hidden;
     div {
+      cursor: pointer;
       width: 3vw;
       height: 3vw;
       border-radius: 50%;
       background-size: 100% 100%;
       background-repeat: no-repeat;
       background-position: center;
-      background-color: aqua;
     }
     .more {
-      background-image: url('../../public/vite.svg');
+      background-image: url('@/images/mainScreen/more.svg');
     }
     .setting {
-      background-image: url('../../public/vite.svg');
+      background-image: url('@/images/mainScreen/setting.svg');
       margin: 10px 0px;
     }
     .store {
-      background-image: url('../../public/vite.svg');
+      background-image: url('@/images/mainScreen/store.svg');
     }
   }
   .chatBox {
@@ -349,6 +379,29 @@
           height: 100%;
           width: 100%;
         }
+      }
+    }
+  }
+  .settingDialogBody {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid $defaultBorderColor;
+    border-radius: 3px;
+    height: 60vh;
+    padding: 2vh 2vw;
+  }
+  .optionContainer {
+    @include flex(row, space-between, center);
+    width: 100%;
+    .optionContainerItem {
+      width: 10vw;
+      cursor: pointer;
+      text-align: center;
+      padding: .2vh .2vw;
+      border: 1px solid $defaultBorderColor;
+      border-radius: 3px;
+      &:hover {
+        background-color: rgba($themeColor, 0.2);
       }
     }
   }
