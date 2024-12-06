@@ -16,5 +16,6 @@ export default defineConfig({
     rollupOptions: {
       external: ['tracker']
     }
-  }
+  },
+  assetsInclude: ["**/*.hdr", "**/*.glb"],
 })

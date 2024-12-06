@@ -13,6 +13,8 @@
     "@types/ws": "^8.5.10",
     "axios": "^1.7.7",
     "babel-polyfill": "^6.26.0",
+    "cannon-es": "^0.20.0",
+    "cannon-es-debugger": "^1.0.0",
     "element-plus": "^2.6.3",
     "gsap": "^3.12.5",
     "ol": "^9.2.4",

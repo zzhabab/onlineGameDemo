@@ -1,7 +1,11 @@
 <script setup lang="ts">
-  import { ref, reactive, onMounted, nextTick } from 'vue'
+  import { ref, reactive, onMounted, onBeforeUnmount, nextTick } from 'vue'
   import { useCounterStore } from '@/stores/counter'
   import { ElLoading, ElMessage } from 'element-plus'
+  import { World } from '@/typeScript/World'
+  import * as THREE from 'three'
+  import { Ball, Player } from '@/typeScript/Role'
+  import { gsap } from "gsap";
 
   const counter = useCounterStore()
   const serverAddress = 'ws://localhost:8080'
@@ -19,6 +23,27 @@
   let behaviorArray = ref<Array<string>>([])
   let optionOneArray = ref<Array<string>>([])
   let optionTwoArray = ref<Array<string>>([])
+
+  class LastSettingItemOption {
+    index: number | null
+    type: string | null
+    content: string | null
+    element: HTMLDivElement | null
+    constructor() {
+      this.index = null
+      this.type = null
+      this.content = null
+      this.element = null
+    }
+    init = () => {
+      this.index = null
+      this.type = null
+      this.content = null
+      this.element = null
+    }
+  }
+  let world: World
+  const lastSettingItemOption = new LastSettingItemOption()
   const chatMessage = ref('')
   // 这里如果给historyContentList.push(1)也不会出现报错，也许还需要什么其他操作？
   const historyContentList = reactive<string []>([])
@@ -31,7 +56,7 @@
     })
     const establishConnectionPromise = await establishConnection()
     if (establishConnectionPromise === 'open') {
-      await loadScene()
+      world = new World()
       setControl()
       handleMessage()
       initClassNameMoreDiv()
@@ -60,23 +85,6 @@
           reject('error')
         }
       })
-    })
-  }
-  const loadScene = () : Promise<boolean> => {
-    return new Promise((resolve, reject) => {
-      try {
-        const containerElement = document.querySelector('.container')
-        const sceneElement = document.createElement('div')
-        sceneElement.setAttribute('class', 'scene')
-        sceneElement.style.width = '100vw'
-        sceneElement.style.height = '100vh'
-        sceneElement.style.backgroundColor = 'a'
-        containerElement!.appendChild(sceneElement)
-        resolve(true)
-      } catch (e) {
-        console.error('场景加载失败', e)
-        reject(false)
-      }
     })
   }
   const loadCharacter = (uuid: string) : Promise<boolean> => {
@@ -115,9 +123,9 @@
     .then(response => response.text())
     .then(data => {
       const res = JSON.parse(data)
-      behaviorArray = res.data.map(({ behavior }) => behavior)
-      optionOneArray = res.data.map(({ optionOne }) => optionOne)
-      optionTwoArray = res.data.map(({ optionTwo }) => optionTwo)
+      behaviorArray.value = res.data.map(({ behavior }: {behavior: string}) => behavior)
+      optionOneArray.value = res.data.map(({ optionOne }: {optionOne: string}) => optionOne)
+      optionTwoArray.value = res.data.map(({ optionTwo }: {optionTwo: string}) => optionTwo)
     })
     .catch(err => {
       console.error('api错误', err)
@@ -128,8 +136,27 @@
     if (counter.deviceType === 'PC') {
       reqKeyboardCommands()
       window.addEventListener('keydown', (e) => {
-        const keydownEventTarget: HTMLInputElement = e.target as HTMLInputElement
+        const keydownEventTarget: HTMLElement = e.target as HTMLElement
         if (keydownEventTarget.getAttribute('id') === 'userInputBox') {
+          return
+        }
+        if (lastSettingItemOption.type && lastSettingItemOption.index !== null) {
+          let targetIndex = Math.max(optionOneArray.value.indexOf(e.key.toLowerCase()), optionTwoArray.value.indexOf(e.key.toLowerCase()))
+          if (targetIndex >= 0) {
+            lastSettingItemOption.element!.textContent = lastSettingItemOption.content
+            ElMessage({
+              message: `键位"${behaviorArray.value[lastSettingItemOption.index]}"冲突`,
+              type: 'error'
+            })
+          } else {
+            if (lastSettingItemOption.type === 'optionOne') {
+              optionOneArray.value[lastSettingItemOption.index] = e.key.toLowerCase()
+            }
+            if (lastSettingItemOption.type === 'optionTwo') {
+              optionTwoArray.value[lastSettingItemOption.index] = e.key.toLowerCase()
+            }
+          }
+          lastSettingItemOption.init()
           return
         }
         const obj = {
@@ -164,11 +191,11 @@
       const res = JSON.parse(e.data)
       if (res.type === 'behavior') {
         if (res.status) {
-          const optionOneIndex = optionOneArray.indexOf(res.data)
-          const optionTwoIndex = optionTwoArray.indexOf(res.data)
+          const optionOneIndex = optionOneArray.value.indexOf(res.data)
+          const optionTwoIndex = optionTwoArray.value.indexOf(res.data)
           if (optionOneIndex >= 0 || optionTwoIndex >= 0) {
             const reallyIndex = Math.max(optionOneIndex, optionTwoIndex)
-            const reallyBehavior = behaviorArray[reallyIndex]
+            const reallyBehavior = behaviorArray.value[reallyIndex]
             const activeElementIndex = characterElementList.findIndex(item => item.uuid === res.uuid)
             const activeElement = characterElementList[activeElementIndex].element
             const characterRect = activeElement.getBoundingClientRect();
@@ -224,6 +251,7 @@
     chatMessage.value = ''
   }
   const handleClickSetting = () => {
+    lastSettingItemOption.init()
     settingShow.value = true
   }
   const handleClickStore = () => {
@@ -233,22 +261,59 @@
     settingShow.value = false
     storeShow.value = false
   }
-  const handleSettingItemClick = (type, myIndex) => {
-    // let 
-    if (type === 'optionOne') {
-      // optionOneArray
+  const handleSettingItemClick = (event: MouseEvent, type: string, myIndex: number) => {
+    if (lastSettingItemOption.type) {
+      lastSettingItemOption.element!.textContent = lastSettingItemOption.content
     }
-    if (type === 'optionTwo') {
-      // optionTwoArray
-    }
+    lastSettingItemOption.type = type
+    lastSettingItemOption.index = myIndex
+    lastSettingItemOption.content = (event.target as HTMLDivElement).textContent
+    lastSettingItemOption.element = event.target as HTMLDivElement
+    (event.target as HTMLDivElement).textContent = '请按键'
   }
   const handleLogOut = () => {
     ws.close()
   }
+  const forward = () => {
+    const player = world.playerList[0]
+    player.actions.idle.play().crossFadeTo(player.actions.run.play(), 0.5, true);
+    gsap.to(player.model.position, {
+      duration: 5,
+      z: -10,
+      ease: "power2.out",
+      onComplete: () => {
+        player.actions.run.play().crossFadeTo(player.actions.run.stop(), 0.5, true);
+      }
+    })
+  }
+  const idle = () => {
+    const player = world.playerList[0]
+    player.actions.idle.play()
+  }
+  const zzh = () => {
+    // const _ball = world.roleList[0] as Ball
+    // gsap.to(_ball.ballBody.position, {
+    //   duration: 5,
+    //   x: 5,
+    //   ease: "power2.out",
+    // })
+
+    // _ball.ballBody.velocity.set(5,0,0)
+
+    console.log('-----ss------>zzh', counter.resources)
+  }
+  onBeforeUnmount(() => {
+    counter.scene.remove(...counter.scene.children)
+  })
 </script>
 
 <template>
   <div class="container"></div>
+  <div style="position: absolute; top: 0; left: 100px; z-index: 999;">
+    <button @click="forward">forward</button>
+    <button @click="idle">idle</button>
+    <button @click="zzh">zzh</button>
+  </div>
   <div class="moreBox">
     <div class="more"></div>
     <div class="setting" @click="handleClickSetting"></div>
@@ -260,7 +325,7 @@
     </div>
     <div class="inputBox">
       <div class="left">
-        <input id="userInputBox" @keydown.enter="handleClickSendMessage" v-model="chatMessage" />
+        <input id="userInputBox" autocomplete="off" @keydown.enter="handleClickSendMessage" v-model="chatMessage" />
       </div>
       <div class="right">
         <button @click="handleClickSendMessage">发送</button>
@@ -276,8 +341,8 @@
     <div class="settingDialogBody">
       <div v-for="(item, index) in behaviorArray" class="optionContainer" :style="index === behaviorArray.length - 1 ? '' : 'margin-bottom: 2vh;'">
         <div style="width: 100px;">{{ item }}</div>
-        <div class="optionContainerItem" @click="handleSettingItemClick('optionOne', index)">{{ optionOneArray[index] }}</div>
-        <div class="optionContainerItem" @click="handleSettingItemClick('optionTwo', index)">{{ optionTwoArray[index] }}</div>
+        <div class="optionContainerItem" @click="handleSettingItemClick($event, 'optionOne', index)">{{ optionOneArray[index] }}</div>
+        <div class="optionContainerItem" @click="handleSettingItemClick($event, 'optionTwo', index)">{{ optionTwoArray[index] }}</div>
       </div>
       <div style="flex: 1;"></div>
       <div style="display: flex; width: 100%;">
@@ -304,6 +369,7 @@
     height: 100vh;
   }
   .moreBox {
+    z-index: 999;
     width: 3vw;
     height: 3vw;
     margin: 10px;
@@ -333,6 +399,7 @@
     }
   }
   .chatBox {
+    z-index: 999;
     width: 30vw;
     height: 20vh;
     position: absolute;
@@ -345,6 +412,7 @@
     overflow: hidden;
     transition: all $myTransitionDuration;
     .historyContent {
+      background-color: rgba($color: #ffffff, $alpha: 0.2);
       width: 100%;
       max-height: 85%;
       height: 85%;

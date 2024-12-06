@@ -1,7 +1,6 @@
 <script lang="ts" setup>
   import { ref, reactive, onMounted, nextTick, defineAsyncComponent, toRaw, getCurrentInstance } from 'vue'
   import * as THREE from 'three'
-  // import { OrbitControls } from '../../node_modules/three/examples/jsm/controls/OrbitControls.js'
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
   import { useCounterStore } from '@/stores/counter'
   import { useRouter } from 'vue-router'
@@ -13,7 +12,6 @@
   import shaderFragment from '../shaders/floor/fragment.glsl?raw'
   import testVertexShader from './testVertexShader.glsl?raw'
   import testFragmentShader from './testFragmentShader.glsl?raw'
-  import { render } from 'node_modules/sass/types/index'
   
   import { MyResponseType, Http } from '@/type/index'
   
@@ -23,9 +21,12 @@
     name: '',
     password: '',
   })
-  
   const http: Http = getCurrentInstance()?.appContext.config.globalProperties.$http
+  const resourcesLoadReady = ref(false)
   onMounted(() => {
+    document.addEventListener('resourcesLoadReady', (event) => {
+      resourcesLoadReady.value = true
+    })
     getDeviceType()
     // initThreejs()
     // setFloor()
@@ -185,6 +186,7 @@
 
 <template>
   <el-form
+    v-if="resourcesLoadReady"
     label-position="left"
     label-width="auto"
     :model="userInfo"
@@ -209,6 +211,10 @@
       <el-button @click="handleClickLogin">login</el-button>
     </el-form-item>
   </el-form>
+  <div v-else style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+    loading...
+    {{ counter.resources.fulfilledCount }} / {{ counter.resources.totalCount }}
+  </div>
 </template>
 
 <style lang="scss" scoped>

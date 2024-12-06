@@ -149,14 +149,14 @@ app.post('/login', (req, res) => {
         message: '未输入用户名'
       }
     }
-    if (uuidList.includes(data.name)) {
-      flag = false
-      obj = {
-        status: false,
-        uuid: data.name,
-        message: '重复登录'
-      }
-    }
+    // if (uuidList.includes(data.name)) {
+    //   flag = false
+    //   obj = {
+    //     status: false,
+    //     uuid: data.name,
+    //     message: '重复登录'
+    //   }
+    // }
     if (flag) {
       uuidList.push(data.name)
       obj = {
