@@ -42,8 +42,8 @@ export class Player extends Role {
   setPhysices = () => {
     const quaternion = new CANNON.Quaternion()
     quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
-    // 注意这个quaternion不能添加到body上而是设置给addShape方法的_orientation
-    // 不然在同步渲染模型和物理模型的quaternion时位置依然不重合
+    /* 注意这个quaternion不能添加到body上而是设置给addShape方法的_orientation
+    不然在同步渲染模型和物理模型的quaternion时位置依然不重合 */
     const body = new CANNON.Body({
       mass: 1,
       position: new CANNON.Vec3(0, 10, 0),

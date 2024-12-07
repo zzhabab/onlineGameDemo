@@ -19,9 +19,10 @@ import { ref } from 'vue'
 interface Resource {
   name: string,
   sourcePath: string,
-  type: 'texture' | 'model',
+  type: 'texture' | 'model' | 'audio',
   gltf?: GLTF
-  image?: Event
+  image?: HTMLImageElement
+  audio?: HTMLAudioElement
 }
 export class Resources {
   data: {
@@ -69,10 +70,18 @@ export class Resources {
   loadImage = (resource: Resource) => {
     const img = new Image()
     img.onload = (data) => {
-      resource.image = data
+      resource.image = img
       this.afterLoad()
     }
     img.src = resource.sourcePath
+  }
+  loadAudio = (resource: Resource) => {
+    const audio = new Audio()
+    audio.onload = (data) => {
+      resource.audio = audio
+      this.afterLoad()
+    }
+    audio.src = resource.sourcePath
   }
   afterLoad = () => {
     this.fulfilledCount.value = this.fulfilledCount.value + 1
