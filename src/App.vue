@@ -24,17 +24,8 @@
 </script>
 
 <template>
-  <!-- <HelloWorld></HelloWorld> -->
-  <!-- <Login></Login> -->
   <router-view></router-view>
 </template>
 
 <style lang="scss" scoped>
-  // .zzh {
-  //   width: 100px;
-  //   height: 100px;
-  //   mask-image: url('../public/block-file.svg');
-  //   background-color: currentColor;
-  //   color: red;
-  // }
 </style>

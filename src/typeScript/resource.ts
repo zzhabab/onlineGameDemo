@@ -6,13 +6,19 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { gsap } from "gsap";
 import { mod } from 'three/examples/jsm/nodes/Nodes.js';
 
-import soldierBase from '@/models/Soldier.glb'
-
 import brickBase from '@/models/brick/base.glb'
 import brickCollision from '@/models/brick/collision.glb'
 
 import lemonBase from '@/models/lemon/base.glb'
 import lemonCollision from '@/models/lemon/collision.glb'
+
+import soldierBase from '@/models/Soldier.glb'
+import mapBase from '@/models/Map.glb'
+import airplane from '@/models/airplane.glb'
+import boxman from '@/models/boxman.glb'
+import car from '@/models/car.glb'
+import heli from '@/models/heli.glb'
+import world from '@/models/world.glb'
 
 import { ref } from 'vue'
 
@@ -40,6 +46,12 @@ export class Resources {
       {name: 'lemonBase', sourcePath: lemonBase, type: 'model'},
       {name: 'lemonCollision', sourcePath: lemonCollision, type: 'model'},
       {name: 'soldierBase', sourcePath: soldierBase, type: 'model'},
+      {name: 'mapBase', sourcePath: mapBase, type: 'model'},
+      {name: 'airplane', sourcePath: airplane, type: 'model'},
+      {name: 'boxman', sourcePath: boxman, type: 'model'},
+      {name: 'car', sourcePath: car, type: 'model'},
+      {name: 'heli', sourcePath: heli, type: 'model'},
+      {name: 'world', sourcePath: world, type: 'model'},
     ]
     this.totalCount.value = tempList.length
     this.load(tempList)

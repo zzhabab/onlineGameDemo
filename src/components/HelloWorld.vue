@@ -4,8 +4,9 @@
   import { ElLoading, ElMessage } from 'element-plus'
   import { World } from '@/typeScript/World'
   import * as THREE from 'three'
-  import { Ball, Player } from '@/typeScript/Role'
+  import { Ball, Boxman, Player } from '@/typeScript/Role'
   import { gsap } from "gsap";
+  import * as CANNON from 'cannon-es'
 
   const counter = useCounterStore()
   const serverAddress = 'ws://localhost:8080'
@@ -166,6 +167,11 @@
         }
         ws.send(JSON.stringify(obj))
       })
+      window.addEventListener('keyup', (e) => {
+        if (counter.isItTakingAction) {
+          counter.isItTakingAction = !counter.isItTakingAction
+        }
+      })
     }
     if (counter.deviceType === 'Mobile') {
       
@@ -199,18 +205,35 @@
             const activeElementIndex = characterElementList.findIndex(item => item.uuid === res.uuid)
             const activeElement = characterElementList[activeElementIndex].element
             const characterRect = activeElement.getBoundingClientRect();
+            // switch (reallyBehavior){
+            //   case 'forward':
+            //     activeElement.style.top = characterRect.top - 1 + 'px'
+            //     break;
+            //   case 'backward':
+            //     activeElement.style.top = characterRect.top + 1 + 'px'
+            //     break;
+            //   case 'turnLeft':
+            //     activeElement.style.left = characterRect.left - 1 + 'px'
+            //     break;
+            //   case 'turnRight':
+            //     activeElement.style.left = characterRect.left + 1 + 'px'
+            //     break;
+            //   default:
+            //     break;
+            // }
+            counter.isItTakingAction = true
             switch (reallyBehavior){
               case 'forward':
-                activeElement.style.top = characterRect.top - 1 + 'px'
+                world.roleList[0].forward()
                 break;
               case 'backward':
-                activeElement.style.top = characterRect.top + 1 + 'px'
+                world.roleList[0].backward()
                 break;
               case 'turnLeft':
-                activeElement.style.left = characterRect.left - 1 + 'px'
+                world.roleList[0].turnLeft()
                 break;
               case 'turnRight':
-                activeElement.style.left = characterRect.left + 1 + 'px'
+                world.roleList[0].turnRight()
                 break;
               default:
                 break;
@@ -275,20 +298,34 @@
     ws.close()
   }
   const forward = () => {
-    const player = world.playerList[0]
-    player.actions.idle.play().crossFadeTo(player.actions.run.play(), 0.5, true);
-    gsap.to(player.model.position, {
-      duration: 5,
-      z: -10,
-      ease: "power2.out",
-      onComplete: () => {
-        player.actions.run.play().crossFadeTo(player.actions.run.stop(), 0.5, true);
-      }
-    })
+    // const player = world.playerList[0]
+    // const targetValue = player.model.position.z - 1
+    // const duration = 1
+    // player.actions.run.paused = false
+    // player.actions.run.enabled = true
+    // player.actions.idle.play().crossFadeTo(player.actions.run.play(), duration / 10, true);
+    // gsap.to(player.model.position, {
+    //   duration: duration,
+    //   z: targetValue,
+    //   ease: "power2.out",
+    //   onComplete: () => {
+    //     player.actions.idle.paused = false
+    //     player.actions.idle.enabled = true
+    //     player.actions.run.play().crossFadeTo(player.actions.idle.play(), duration / 10, true);
+    //   }
+    // })
+
+    const role = world.roleList[0] as Boxman
+    role.actions.run.weight = 1
+    role.actions.idle.weight = 0
+    role.roleBaseBody!.velocity.set(0, 0, 2)
+
+    // role.actions.run.enabled = true
+    // role.actions.run.paused = false
+    // role.actions.run.play()
   }
   const idle = () => {
-    const player = world.playerList[0]
-    player.actions.idle.play()
+    counter.playerState.forward = false
   }
   const zzh = () => {
     // const _ball = world.roleList[0] as Ball

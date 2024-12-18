@@ -2,53 +2,44 @@ import { useCounterStore } from '@/stores/counter'
 import * as THREE from 'three'
 import * as CANNON from 'cannon-es'
 import { gsap } from "gsap";
+import { GLTF } from 'three/examples/jsm/Addons.js';
+import { Actions } from '@/type'
 
 const counter = useCounterStore()
-// let model: THREE.Group<THREE.Object3DEventMap>
-// export class Role {
-//   roleGeometry: THREE.BufferGeometry
-//   roleMaterial: THREE.MeshStandardMaterial
-//   roleMesh: THREE.Mesh
-//   roleBody: CANNON.Body
-//   rolePhysicsMaterial: CANNON.Material
-//   constructor(
-//     roleGeometry: THREE.BufferGeometry,
-//     roleMaterial: THREE.MeshStandardMaterial,
-//     roleMesh: THREE.Mesh,
-//     roleBody: CANNON.Body,
-//     rolePhysicsMaterial: CANNON.Material
-//   ) {
-//     this.roleGeometry = roleGeometry
-//     this.roleMaterial = roleMaterial
-//     this.roleMesh = roleMesh
-//     this.roleBody = roleBody
-//     this.rolePhysicsMaterial = rolePhysicsMaterial
-//     this.setPhysics()
-//     this.addToWorld()
-//   }
-//   addToWorld = () => {
-//     counter.scene.add(this.roleMesh);
-//   }
-//   removeFromWorld = () => {
-//     counter.scene.remove(this.roleMesh)
-//   }
-//   forward = () => {
-//     const nextValue = model.position.x + 1
-//     gsap.to(model.position, {
-//       duration: 2,
-//       x: nextValue,
-//       ease: "power2.out",
-//     })
-//   }
-// }
 
-export class Role {
-  roleGroup: THREE.Group
+// 派生类构造函数先于基类的执行
+export abstract class Role {
+  public roleBody?: CANNON.Body
+  public roleBaseBody: CANNON.Body = new CANNON.Body()
+  public currentActions?: THREE.AnimationAction
   constructor(
-    roleGroup: THREE.Group
+    public roleGroup: THREE.Group,
+    public mixer?: THREE.AnimationMixer,
+    public gltf?: GLTF,
+    public rolePhysicsMaterial?: CANNON.Material,
+    public roleOption: {
+      [key: string]: any
+    } = {},
+    public actions: Actions = {}
   ) {
-    this.roleGroup = roleGroup
     this.addToScene()
+  }
+  setSkeleton = () => {
+    const skeleton = new THREE.SkeletonHelper(this.roleGroup);
+    skeleton.visible = false;
+    counter.scene.add( skeleton );
+  }
+  getActions = () => {
+    const animations = this.gltf!.animations;
+    animations.forEach((item, index) => {
+      this.actions[item.name] = this.mixer!.clipAction(item)
+      if (item.name === 'idle') {
+        this.actions[item.name].weight = 1
+      } else {
+        this.actions[item.name].weight = 0
+      }
+      this.actions[item.name].play()
+    })
   }
   getRoleGroup = (): THREE.Group => {
     return this.roleGroup
@@ -65,11 +56,25 @@ export class Role {
   removeFromScene = () => {
     counter.scene.remove(this.roleGroup)
   }
-  updataState = (group: THREE.Group, physicsBody: CANNON.Body) => {
-    // group.position.copy(physicsBody.position)
-    // group.quaternion.set(physicsBody.quaternion.x, physicsBody.quaternion.y, physicsBody.quaternion.z, physicsBody.quaternion.w);
-
-    physicsBody.position.copy(new CANNON.Vec3(group.position.x, group.position.y, group.position.z))
-    physicsBody.quaternion.set(group.quaternion.x, group.quaternion.y, group.quaternion.z, group.quaternion.w);
+  updata = () => {
+    if (this.roleBody) {
+      this.roleBody.position.set(this.roleBaseBody.position.x, this.roleBaseBody.position.y + this.roleOption.y, this.roleBaseBody.position.z)
+      this.roleBody.quaternion.set(this.roleBaseBody.quaternion.x, this.roleBaseBody.quaternion.y, this.roleBaseBody.quaternion.z, this.roleBaseBody.quaternion.w);
+      this.roleGroup.position.set(this.roleBaseBody.position.x, this.roleBaseBody.position.y - this.roleOption.y, this.roleBaseBody.position.z)
+      this.roleGroup.quaternion.set(this.roleBaseBody.quaternion.x, this.roleBaseBody.quaternion.y, this.roleBaseBody.quaternion.z, this.roleBaseBody.quaternion.w);
+    }
+    if (counter.isItTakingAction) {
+      // console.log(this.roleBaseBody.velocity.length())
+    } else {
+      this.roleBaseBody.material!.friction = 0.03
+      if (this.roleBaseBody.velocity.length() < 0.1 && this.currentActions) {
+        this.actions.idle.weight = 1
+        this.currentActions.weight = 0
+      }
+    }
   }
+  abstract forward: () => void
+  abstract backward: () => void
+  abstract turnLeft: () => void
+  abstract turnRight: () => void
 }

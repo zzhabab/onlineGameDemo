@@ -8,3 +8,9 @@ declare module '*.glb' {
   const value: string;
   export default value;
 }
+
+declare module 'cannon' {
+  export interface Body {
+    option?: string;
+  }
+}
